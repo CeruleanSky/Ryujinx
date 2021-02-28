@@ -1070,6 +1070,20 @@ namespace Ryujinx.HLE.HOS.Services.Hid
 
             return ResultCode.Success;
         }
+        
+        [Command(211)] // 7.0.0+
+        // IsVibrationDeviceMounted(nn::hid::VibrationDeviceHandle, nn::applet::AppletResourceUserId) -> bool
+        public ResultCode IsVibrationDeviceMounted(ServiceCtx context)
+        {
+            int  vibrationDeviceHandle = context.RequestData.ReadInt32();
+            long appletResourceUserId  = context.RequestData.ReadInt64();
+
+            context.ResponseData.Write(false);
+
+            Logger.Stub?.PrintStub(LogClass.ServiceHid, new { appletResourceUserId, vibrationDeviceHandle, IsVibrationDeviceMounted = false });
+
+            return ResultCode.Success;
+        }
 
         [Command(300)]
         // ActivateConsoleSixAxisSensor(nn::applet::AppletResourceUserId)
