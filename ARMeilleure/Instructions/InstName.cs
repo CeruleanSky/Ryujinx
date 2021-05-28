@@ -607,6 +607,8 @@ namespace ARMeilleure.Instructions
         Vnmls,
         Vorr,
         Vpadd,
+        Vpadal,
+        Vpaddl,
         Vpmax,
         Vpmin,
         Vqmovn,
