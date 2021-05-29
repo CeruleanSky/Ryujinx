@@ -49,6 +49,57 @@ namespace ARMeilleure.Instructions
             return context.Call(info, op1);
         }
 
+        private static Operand EmitSaturateAndNarrowInt(ArmEmitterContext context, Operand op1, int size, bool srcUnsigned, bool destUnsigned)
+        {
+            MethodInfo info = srcUnsigned ? (
+                size switch
+                    {
+                        2 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatU64ToU32)),
+                        1 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatU32ToU16)),
+                        0 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatU16ToU8)),
+                        _ => throw new InvalidOperationException($"Invalid target narrow size \"{size}\".")
+                    }
+                ) : (
+                destUnsigned ? (
+                    size switch
+                    {
+                        2 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI64ToU32)),
+                        1 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI32ToU16)),
+                        0 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI16ToU8)),
+                        _ => throw new InvalidOperationException($"Invalid target narrow size \"{size}\".")
+                    }
+                ) : (
+                    size switch
+                    {
+                        2 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI64ToI32)),
+                        1 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI32ToI16)),
+                        0 => typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI16ToI8)),
+                        _ => throw new InvalidOperationException($"Invalid target narrow size \"{size}\".")
+                    }
+                )
+            );
+
+            return context.Call(info, op1);
+        }
+
+        private static Operand FloatToFixed(ArmEmitterContext context, Operand op1, bool unsigned, int fbits)
+        {
+            MethodInfo info;
+
+            info = unsigned ? typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPToUFixed)) : typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPToSFixed));
+
+            return context.Call(info, op1, Const(fbits));
+        }
+
+        private static Operand FixedToFloat(ArmEmitterContext context, Operand op1, bool unsigned, int fbits)
+        {
+            MethodInfo info;
+
+            info = unsigned ? typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.UFixedToFP)) : typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.SFixedToFP));
+
+            return context.Call(info, op1, Const(fbits));
+        }
+
         public static void Vcvt_V(ArmEmitterContext context)
         {
             OpCode32Simd op = (OpCode32Simd)context.CurrOp;
@@ -107,6 +158,41 @@ namespace ARMeilleure.Instructions
                     {
                         EmitVectorUnaryOpSx32(context, (op1) => EmitFPConvert(context, op1, floatSize, true));
                     }
+                }
+            }
+        }
+
+        //VCVT: convert vector elements (32-bit) between floating-point and fixed point
+        public static void Vcvt_V2(ArmEmitterContext context)
+        {
+            OpCode32SimdCvtFFixed op = (OpCode32SimdCvtFFixed)context.CurrOp;
+
+            var toFixed = op.Opc == 1;
+            int fracBits = op.Fbits;
+            var unsigned = op.U; //Sign of I32 (destination/source)
+
+            if (toFixed) //F32 to S32 or U32 (fixed)
+            {
+                EmitVectorUnaryOpF32(context, (op1) =>
+                {
+                    return FloatToFixed(context, op1, unsigned, fracBits);
+                });
+            }
+            else //S32 or U32 (fixed) to F32
+            {
+                if (unsigned)
+                {
+                    EmitVectorUnaryOpZx32(context, (op1) =>
+                    {
+                        return FixedToFloat(context, op1, true, fracBits);
+                    });
+                }
+                else
+                {
+                    EmitVectorUnaryOpSx32(context, (op1) =>
+                    {
+                        return FixedToFloat(context, op1, false, fracBits);
+                    });
                 }
             }
         }

@@ -205,6 +205,40 @@ namespace ARMeilleure.Translation
             SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.UnsignedSrcSignedDstSatQ)));
             SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.UnsignedSrcUnsignedDstSatQ)));
 
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatU64ToU32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatU32ToU16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatU16ToU8)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI64ToU32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI32ToU16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI16ToU8)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI64ToI32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI32ToI16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SatI16ToI8)));
+
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.S32ToS64)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.S16ToS32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.S8ToS16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.U32ToU64)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.U16ToU32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.U8ToU16)));
+
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS64)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU64)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS64)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU64)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU32)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU16)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS8)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU8)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS8)));
+            SetDelegateInfo(typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU8)));
+
             SetDelegateInfo(typeof(SoftFloat16_32).GetMethod(nameof(SoftFloat16_32.FPConvert)));
 
             SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPAdd)));
@@ -249,6 +283,10 @@ namespace ARMeilleure.Translation
             SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPRSqrtStepFused)));
             SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPSqrt)));
             SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPSub)));
+            SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPToSFixed)));
+            SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.FPToUFixed)));
+            SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.SFixedToFP)));
+            SetDelegateInfo(typeof(SoftFloat32).GetMethod(nameof(SoftFloat32.UFixedToFP)));
 
             SetDelegateInfo(typeof(SoftFloat32_16).GetMethod(nameof(SoftFloat32_16.FPConvert)));
 

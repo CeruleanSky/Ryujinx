@@ -3,7 +3,7 @@ using ARMeilleure.IntermediateRepresentation;
 using ARMeilleure.Translation;
 using System;
 using System.Diagnostics;
-
+using System.Reflection;
 using static ARMeilleure.Instructions.InstEmitFlowHelper;
 using static ARMeilleure.Instructions.InstEmitHelper;
 using static ARMeilleure.Instructions.InstEmitSimdHelper;
@@ -417,6 +417,18 @@ namespace ARMeilleure.Instructions
             EmitVectorUnaryNarrowOp32(context, (op1) => op1);
         }
 
+        //Move, saturate, and narrow
+        //Unsigned -> Unsigned only
+        //Signed -> Signed or Unsigned
+        public static void Vqmovn(ArmEmitterContext context)
+        {
+            OpCode32SimdMovNarrow op = (OpCode32SimdMovNarrow)context.CurrOp;
+            var srcUnsigned = op.Opc == 3;
+            var destUnsigned = (op.Opc & 0x1) == 1;
+
+            EmitVectorUnaryNarrowOp32(context, (op1) => EmitSaturateAndNarrowInt(context, op1, op.Size, srcUnsigned, destUnsigned));
+        }
+
         public static void Vneg_S(ArmEmitterContext context)
         {
             OpCode32SimdS op = (OpCode32SimdS)context.CurrOp;
@@ -779,6 +791,19 @@ namespace ARMeilleure.Instructions
             }
         }
 
+        public static void Vmlal_I(ArmEmitterContext context)
+        {
+            OpCode32SimdReg op = (OpCode32SimdReg)context.CurrOp;
+            MethodInfo info = op.Size switch
+            {
+                2 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U32ToU64)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S32ToS64)),
+                1 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U16ToU32)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S16ToS32)),
+                0 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U8ToU16)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S8ToS16)),
+                _ => throw new InvalidOperationException($"Invalid VMLAL size \"{op.Size}\".")
+            };
+            EmitVectorTernaryLongOpI32(context, (d, n, m) => op.Opc == 0 ? context.Add(d, context.Multiply(context.Call(info, n), context.Call(info, m))) : context.Subtract(d, context.Multiply(context.Call(info, n), context.Call(info, m))), !op.U);
+        }
+
         public static void Vmls_S(ArmEmitterContext context)
         {
             if (Optimizations.FastFP && Optimizations.UseSse2)
@@ -994,6 +1019,32 @@ namespace ARMeilleure.Instructions
             }
         }
 
+        public static void Vpadal(ArmEmitterContext context)
+        {
+            OpCode32SimdReg op = (OpCode32SimdReg)context.CurrOp;
+            MethodInfo info = op.Size switch
+            {
+                2 => op.Opc == 1 ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U32ToU64)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S32ToS64)),
+                1 => op.Opc == 1 ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U16ToU32)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S16ToS32)),
+                0 => op.Opc == 1 ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U8ToU16)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S8ToS16)),
+                _ => throw new InvalidOperationException($"Invalid VPADAL size \"{op.Size}\".")
+            };
+            EmitVectorPairwiseTernaryLongOpI32(context, (op1, op2, op3) => context.Add(context.Add(context.Call(info, op1), context.Call(info, op2)), op3), op.Opc != 1);
+        }
+
+        public static void Vpaddl(ArmEmitterContext context)
+        {
+            OpCode32SimdReg op = (OpCode32SimdReg)context.CurrOp;
+            MethodInfo info = op.Size switch
+            {
+                2 => op.Opc == 1 ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U32ToU64)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S32ToS64)),
+                1 => op.Opc == 1 ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U16ToU32)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S16ToS32)),
+                0 => op.Opc == 1 ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.U8ToU16)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.S8ToS16)),
+                _ => throw new InvalidOperationException($"Invalid VPADDL size \"{op.Size}\".")
+            };
+            EmitVectorPairwiseLongOpI32(context, (op1, op2) => context.Add(context.Call(info, op1), context.Call(info, op2)), op.Opc != 1);
+        }
+
         public static void Vpmax_V(ArmEmitterContext context)
         {
             if (Optimizations.FastFP && Optimizations.UseSse2)
@@ -1052,6 +1103,34 @@ namespace ARMeilleure.Instructions
                     return context.ConditionalSelect(greater, op1, op2);
                 }, !op.U);
             }
+        }
+
+        public static void Vqadd(ArmEmitterContext context)
+        {
+            OpCode32SimdReg op = (OpCode32SimdReg)context.CurrOp;
+            MethodInfo info = op.Size switch
+            {
+                3 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU64)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS64)),
+                2 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU32)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS32)),
+                1 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU16)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS16)),
+                0 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatU8)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.AddAndSatS8)),
+                _ => throw new InvalidOperationException($"Invalid VQADD size \"{op.Size}\".")
+            };
+            EmitVectorBinaryOpI32(context, (op1, op2) => context.Call(info, op1, op2), !op.U);
+        }
+
+        public static void Vqsub(ArmEmitterContext context)
+        {
+            OpCode32SimdReg op = (OpCode32SimdReg)context.CurrOp;
+            MethodInfo info = op.Size switch
+            {
+                3 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU64)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS64)),
+                2 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU32)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS32)),
+                1 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU16)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS16)),
+                0 => op.U ? typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatU8)) : typeof(SoftFallback).GetMethod(nameof(SoftFallback.SubAndSatS8)),
+                _ => throw new InvalidOperationException($"Invalid VQSUB size \"{op.Size}\".")
+            };
+            EmitVectorBinaryOpI32(context, (op1, op2) => context.Call(info, op1, op2), !op.U);
         }
 
         public static void Vrev(ArmEmitterContext context)
